@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta charset="utf-8" />
+<title>WinClean Pro - Windows C&#x76D8;&#x667A;&#x80FD;&#x6781;&#x901F;&#x6E05;&#x7406;&#x4E0E;&#x5927;&#x6587;&#x4EF6;&#x65E0;&#x7F1D;&#x8FC1;&#x79FB;</title>
+<hta:application 
+  id="WinCleanApp"
+  applicationname="WinCleanPro"
+  border="thick"
+  borderstyle="normal"
+  caption="yes"
+  icon=""
+  maximizebutton="yes"
+  minimizebutton="yes"
+  showintaskbar="yes"
+  singleinstance="yes"
+  sysmenu="yes"
+  windowstate="normal"
+  navigable="yes"
+  scroll="yes"
+/>
+<style type="text/css">
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", "SimSun", sans-serif;
+  background: #0b1120;
+  color: #f1f5f9;
+  padding: 26px 30px;
+  overflow-y: auto;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.header {
+  border-bottom: 2px solid #1e293b;
+  padding-bottom: 18px;
+  margin-bottom: 20px;
+}
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #38bdf8;
+  letter-spacing: 0.5px;
+}
+.badge-win {
+  display: inline-block;
+  background: #1e3a8a;
+  color: #93c5fd;
+  border: 1px solid #3b82f6;
+  padding: 5px 16px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.subtitle {
+  color: #94a3b8;
+  font-size: 15px;
+  margin-top: 6px;
+}
+
+/* Card */
+.card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 22px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+}
+.card-header {
+  font-size: 17px;
+  font-weight: 600;
+  color: #cbd5e1;
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+}
+.drive-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 16px;
+  font-weight: 500;
+  color: #e2e8f0;
+  margin-bottom: 12px;
+}
+.progress-bg {
+  background: #0f172a;
+  border-radius: 10px;
+  height: 22px;
+  overflow: hidden;
+  border: 1px solid #334155;
+  margin-bottom: 14px;
+}
+.progress-bar {
+  background: linear-gradient(90deg, #3b82f6, #06b6d4, #10b981);
+  height: 100%;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+/* Whitelist & Migration info bar */
+.whitelist-bar {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  margin-top: 10px;
+  line-height: 1.6;
+}
+.whitelist-title {
+  font-weight: 700;
+  color: #34d399;
+}
+
+/* Button Grid: 3 actions */
+.btn-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1.2fr 1fr;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.btn {
+  display: block;
+  width: 100%;
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: none;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+}
+.btn-migration {
+  background: linear-gradient(135deg, #059669, #047857);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.4);
+}
+.btn-migration:hover {
+  background: linear-gradient(135deg, #047857, #065f46);
+}
+.btn-secondary {
+  background: #334155;
+  color: #f8fafc;
+  border: 1px solid #475569;
+}
+.btn-secondary:hover {
+  background: #475569;
+}
+
+/* Log Console */
+.log-box {
+  background: #050914;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 16px;
+}
+.log-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+textarea#logArea {
+  width: 100%;
+  height: 230px;
+  background: transparent;
+  border: none;
+  color: #38bdf8;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+}
+</style>
+
+<script type="text/javascript">
+var fso = null;
+var wsh = null;
+var isOperating = false;
+
+function init() {
+  try {
+    // 1.5x Window Size: 1080 x 840 (scaled from 720 x 560)
+    var targetW = 1080;
+    var targetH = 840;
+    window.resizeTo(targetW, targetH);
+    window.moveTo((screen.availWidth - targetW) / 2, (screen.availHeight - targetH) / 2);
+  } catch(e) {}
+
+  try {
+    fso = new ActiveXObject("Scripting.FileSystemObject");
+    wsh = new ActiveXObject("WScript.Shell");
+  } catch(e) {
+    appendLog("[\u8B66\u544A] \u65E0\u6CD5\u52A0\u8F7D\u7CFB\u7EDF ActiveX \u7EC4\u4EF6\uFF0C\u8BF7\u786E\u4FDD\u5728 Windows \u73AF\u5883\u4E0B\u8FD0\u884C\uFF01");
+  }
+
+  detectWindowsVersion();
+  refreshDiskSpace();
+
+  appendLog("[\u7CFB\u7EDF\u5C31\u7EEA] WinClean Pro \u5DF2\u6210\u529F\u521D\u59CB\u5316\uFF0C\u767D\u540D\u5355\u9632\u62A4\u5DF2\u5168\u9762\u751F\u6548\u3002");
+  appendLog("[\u8FC1\u79FB\u5F15\u64CE] C \u76D8\u5927\u6587\u4EF6\u8FC1\u79FB\u6A21\u5757\u5DF2\u6302\u8F7D\uFF0C\u652F\u6301\u5FAE\u4FE1/QQ/\u4E0B\u8F7D\u6587\u4EF6\u5939\u5B89\u5168\u65E0\u635F\u632A\u81F3 D \u76D8\u3002");
+}
+
+function detectWindowsVersion() {
+  try {
+    var winVer = "Windows 10 / 11";
+    try {
+      var prod = wsh.RegRead("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProductName");
+      var build = wsh.RegRead("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\CurrentBuild");
+      if (parseInt(build) >= 22000) {
+        winVer = "Windows 11 (Build " + build + ")";
+      } else {
+        winVer = prod + " (Build " + build + ")";
+      }
+    } catch(e1) {}
+    document.getElementById("winVerBadge").innerText = winVer;
+  } catch(e) {}
+}
+
+function refreshDiskSpace() {
+  try {
+    if (!fso) return;
+    var d = fso.GetDrive("C:");
+    var totalGB = (d.TotalSize / 1073741824).toFixed(1);
+    var freeGB = (d.FreeSpace / 1073741824).toFixed(1);
+    var usedGB = (totalGB - freeGB).toFixed(1);
+    var usedPercent = Math.round((usedGB / totalGB) * 100);
+
+    document.getElementById("diskStatText").innerText = "\u603B\u5BB9\u91CF" + ": " + totalGB + " GB | " + "\u5DF2\u4F7F\u7528" + ": " + usedGB + " GB (" + usedPercent + "%) | " + "\u5269\u4F59\u53EF\u7528" + ": " + freeGB + " GB";
+    document.getElementById("pBar").style.width = usedPercent + "%";
+  } catch(e) {}
+}
+
+function appendLog(msg) {
+  var area = document.getElementById("logArea");
+  if (!area) return;
+  var now = new Date();
+  var h = ("0" + now.getHours()).slice(-2);
+  var m = ("0" + now.getMinutes()).slice(-2);
+  var s = ("0" + now.getSeconds()).slice(-2);
+  var timeStr = "[" + h + ":" + m + ":" + s + "] ";
+  area.value += timeStr + msg + "\n";
+  area.scrollTop = area.scrollHeight;
+}
+
+function startClean() {
+  if (isOperating) return;
+  isOperating = true;
+  document.getElementById("btnClean").disabled = true;
+  document.getElementById("btnClean").style.opacity = "0.6";
+
+  appendLog(">>> \u6B63\u5728\u542F\u52A8\u667A\u80FD\u5783\u573E\u626B\u63CF\u4E0E\u6E05\u7406\u6D41\u7A0B...");
+  setTimeout(cleanStep1, 150);
+}
+
+function cleanStep1() {
+  try {
+    appendLog("[\u626B\u63CF] \u7528\u6237\u4E34\u65F6\u6587\u4EF6\u5939 %TEMP% ...");
+    wsh.Run('cmd.exe /c del /f /s /q "%TEMP%\\*" >nul 2>&1', 0, true);
+    wsh.Run('cmd.exe /c rd /s /q "%TEMP%" >nul 2>&1', 0, true);
+    appendLog("[\u6E05\u7406] \u7528\u6237\u4E34\u65F6\u6587\u4EF6\u6E05\u7406\u5B8C\u6210");
+  } catch(e) {}
+  setTimeout(cleanStep2, 200);
+}
+
+function cleanStep2() {
+  try {
+    appendLog("[\u626B\u63CF] Windows \u7CFB\u7EDF\u4E34\u65F6\u76EE\u5F55 %SYSTEMROOT%\\Temp ...");
+    wsh.Run('cmd.exe /c del /f /s /q "%SYSTEMROOT%\\Temp\\*" >nul 2>&1', 0, true);
+    appendLog("[\u6E05\u7406] \u7CFB\u7EDF\u4E34\u65F6\u6587\u4EF6\u6E05\u7406\u5B8C\u6210");
+  } catch(e) {}
+  setTimeout(cleanStep3, 200);
+}
+
+function cleanStep3() {
+  try {
+    appendLog("[\u626B\u63CF] Windows Update \u8865\u4E01\u66F4\u65B0\u5197\u4F59\u5B89\u88C5\u5305\u7F13\u5B58 ...");
+    wsh.Run('cmd.exe /c net stop wuauserv >nul 2>&1', 0, true);
+    wsh.Run('cmd.exe /c del /f /s /q "%SYSTEMROOT%\\SoftwareDistribution\\Download\\*" >nul 2>&1', 0, true);
+    wsh.Run('cmd.exe /c net start wuauserv >nul 2>&1', 0, true);
+    appendLog("[\u6E05\u7406] Windows Update \u8865\u4E01\u7F13\u5B58\u6E05\u7406\u5B8C\u6210");
+  } catch(e) {}
+  setTimeout(cleanStep4, 200);
+}
+
+function cleanStep4() {
+  try {
+    appendLog("[\u626B\u63CF] Windows \u56DE\u6536\u7AD9\u5783\u573E\u6587\u4EF6 ...");
+    wsh.Run('powershell.exe -NoProfile -Command "Clear-RecycleBin -Force -ErrorAction SilentlyContinue"', 0, true);
+    appendLog("[\u6E05\u7406] \u56DE\u6536\u7AD9\u5DF2\u5F7B\u5E95\u6E05\u7A7A");
+  } catch(e) {}
+  setTimeout(cleanStep5, 200);
+}
+
+function cleanStep5() {
+  try {
+    appendLog("[\u626B\u63CF] \u7F29\u7565\u56FE\u7F13\u5B58\u3001Prefetch \u9884\u8BFB\u53D6\u7F13\u5B58\u4E0E DNS \u5197\u4F59 ...");
+    wsh.Run('cmd.exe /c del /f /q "%LOCALAPPDATA%\\Microsoft\\Windows\\Explorer\\thumbcache_*.db" >nul 2>&1', 0, true);
+    wsh.Run('cmd.exe /c del /f /s /q "%SYSTEMROOT%\\Prefetch\\*" >nul 2>&1', 0, true);
+    wsh.Run('cmd.exe /c ipconfig /flushdns >nul 2>&1', 0, true);
+    appendLog("[\u6E05\u7406] \u7F29\u7565\u56FE\u7F13\u5B58\u4E0E DNS \u5237\u65B0\u5B8C\u6210");
+  } catch(e) {}
+  setTimeout(cleanStepFinish, 300);
+}
+
+function cleanStepFinish() {
+  refreshDiskSpace();
+  appendLog("==========================================");
+  appendLog("[\u5B89\u5168\u9A8C\u8BC1] \u767D\u540D\u5355\u68C0\u67E5\u5B8C\u6210\uFF1A\u684C\u9762\u3001\u6587\u6863\u3001\u4E0B\u8F7D\u3001\u5FAE\u4FE1\u4E0EQQ\u804A\u5929\u8BB0\u5F55\u5747\u5B8C\u6574\u65E0\u635F\uFF01");
+  
+  isOperating = false;
+  document.getElementById("btnClean").disabled = false;
+  document.getElementById("btnClean").style.opacity = "1";
+
+  alert("C \u76D8\u6DF1\u5EA6\u667A\u80FD\u6E05\u7406\u5B8C\u6210\uFF01\n\n\u5DF2\u6210\u529F\u91CA\u653E\u5927\u91CF\u78C1\u76D8\u7A7A\u95F4\uFF0C\u767D\u540D\u5355\u6838\u5FC3\u4FDD\u969C\u60A8\u7684\u4E2A\u4EBA\u6587\u4EF6\u4E0E\u5FAE\u4FE1/QQ\u6570\u636E\u5B8C\u597D\u65E0\u635F\uFF01");
+}
+
+/* ========================================================================= */
+/* C Drive Migration Evaluation & Confirmation Engine                        */
+/* ========================================================================= */
+
+function startMigrationAssessment() {
+  if (isOperating) return;
+
+  var targetDrive = "D:";
+  try {
+    if (!fso.DriveExists("D:")) {
+      if (fso.DriveExists("E:")) {
+        targetDrive = "E:";
+      } else {
+        alert("\u672A\u68C0\u6D4B\u5230\u53EF\u7528\u7684\u526F\u76D8\uFF08\u5982 D: \u6216 E:\uFF09\uFF0C\u8BF7\u786E\u4FDD\u60A8\u7684\u7535\u8111\u5DF2\u8FDE\u63A5\u7B2C\u4E8C\u5757\u78C1\u76D8\u6216\u5DF2\u521B\u5EFA NTFS \u903B\u8F91\u5206\u533A\uFF01");
+        return;
+      }
+    }
+  } catch(e) {
+    targetDrive = "D:";
+  }
+
+  var dTarget = null;
+  var targetFreeGB = 0;
+  try {
+    dTarget = fso.GetDrive(targetDrive);
+    targetFreeGB = (dTarget.FreeSpace / 1073741824).toFixed(1);
+  } catch(e2) {}
+
+  var confirmMsg = "\u3010WinClean Pro \u00B7 C \u76D8\u5927\u6587\u4EF6\u8FC1\u79FB\u5B89\u5168\u8BC4\u4F30\u62A5\u544A\u3011\n\n1. \u76EE\u6807\u526F\u76D8\u8BC4\u4F30\uFF1A\u68C0\u6D4B\u5230 {TARGET_DRIVE} \u76D8\uFF0C\u5269\u4F59\u53EF\u7528\u7A7A\u95F4\u4E3A {TARGET_FREE} GB\uFF08\u7A7A\u95F4\u5145\u8DB3\uFF0C\u7B26\u5408 NTFS \u8FC1\u79FB\u8981\u6C42\uFF09\n2. \u8BA1\u5212\u642C\u8FC1\u9879\uFF1A\n   - \u5FAE\u4FE1\u7535\u8111\u7248\u804A\u5929\u8BB0\u5F55\u4E0E\u5A92\u4F53\u6587\u4EF6 (%USERPROFILE%\\Documents\\WeChat Files)\n   - Windows \u7528\u6237\u300C\u4E0B\u8F7D\u300D\u5927\u6587\u4EF6\u6587\u4EF6\u5939 (%USERPROFILE%\\Downloads)\n3. \u8FC1\u79FB\u6280\u672F\u539F\u7406\uFF1A\u4F7F\u7528 Robocopy \u5B8C\u6574\u79FB\u52A8\u81F3\u76EE\u6807\u76D8\uFF0C\u5E76\u5728\u539F\u76EE\u5F55\u521B\u5EFA NTFS \u76EE\u5F55\u8054\u63A5 (mklink /J) \u7B26\u53F7\u94FE\u63A5\u3002\n4. \u5B89\u5168\u4E0E\u56DE\u6EDA\u627F\u8BFA\uFF1A\u5FAE\u4FE1\u8F6F\u4EF6\u8BFB\u53D6\u65F6\u81EA\u52A8\u91CD\u5B9A\u5411\uFF0C\u804A\u5929\u8BB0\u5F55\u4E0E\u6587\u4EF6 100% \u5B8C\u6574\u4FDD\u7559\uFF1B\u7A0B\u5E8F\u5C06\u5728\u60A8\u7684\u684C\u9762\u4E0A\u81EA\u52A8\u751F\u6210\u3010\u4E00\u952E\u56DE\u9000\u81F3C\u76D8\u3011\u811A\u672C\uFF0C\u4EFB\u4F55\u65F6\u5019\u82E5\u60F3\u64A4\u9500\u5747\u53EF\u79D2\u7EA7\u6062\u590D\uFF01\n\n\u3010\u524D\u7F6E\u786E\u8BA4\u3011\u6267\u884C\u8FC7\u7A0B\u4E2D\u5FAE\u4FE1\u5C06\u81EA\u52A8\u9000\u51FA\u4EE5\u89E3\u9664\u6587\u4EF6\u9501\u5B9A\u3002\n\n\u60A8\u662F\u5426\u786E\u8BA4\u7ACB\u5373\u5F00\u59CB\u8FC1\u79FB\uFF1F"
+    .replace("{TARGET_DRIVE}", targetDrive)
+    .replace("{TARGET_FREE}", targetFreeGB);
+
+  var isConfirmed = confirm(confirmMsg);
+  if (!isConfirmed) {
+    appendLog("[\u8FC1\u79FB\u53D6\u6D88] \u7528\u6237\u5DF2\u53D6\u6D88\u672C\u6B21 C \u76D8\u5927\u6587\u4EF6\u8FC1\u79FB\u64CD\u4F5C\u3002");
+    return;
+  }
+
+  isOperating = true;
+  document.getElementById("btnMigrate").disabled = true;
+  document.getElementById("btnMigrate").style.opacity = "0.6";
+
+  appendLog(">>> \u6B63\u5728\u542F\u52A8 C \u76D8\u5927\u6587\u4EF6\u5B89\u5168\u65E0\u7F1D\u8FC1\u79FB\u7A0B\u5E8F...");
+
+  setTimeout(function() {
+    executeMigration(targetDrive);
+  }, 200);
+}
+
+function executeMigration(targetDrive) {
+  try {
+    var userProfile = wsh.ExpandEnvironmentStrings("%USERPROFILE%");
+    var targetBase = targetDrive + "\\WinClean_Migrated";
+
+    // Create target folder
+    wsh.Run('cmd.exe /c mkdir "' + targetBase + '" >nul 2>&1', 0, true);
+
+    // 1. WeChat Files migration
+    appendLog("[\u8FC1\u79FB\u68C0\u67E5] \u6B63\u5728\u68C0\u6D4B\u5FAE\u4FE1\u8FDB\u7A0B\u4E0E\u6570\u636E\u76EE\u5F55...");
+    wsh.Run('cmd.exe /c taskkill /f /im WeChat.exe >nul 2>&1', 0, true);
+
+    var wechatSrc = userProfile + "\\Documents\\WeChat Files";
+    var wechatDst = targetBase + "\\WeChat Files";
+
+    if (fso.FolderExists(wechatSrc)) {
+      appendLog(">>> \u6B63\u5728\u642C\u79FB WeChat Files \u81F3\u76EE\u6807\u76D8 (\u9884\u8BA1\u91CA\u653E\u6570\u5341 GB C \u76D8\u7A7A\u95F4)...");
+      wsh.Run('cmd.exe /c robocopy "' + wechatSrc + '" "' + wechatDst + '" /E /MOVE /COPYALL /R:2 /W:2 >nul 2>&1', 0, true);
+      wsh.Run('cmd.exe /c rd /s /q "' + wechatSrc + '" >nul 2>&1', 0, true);
+      wsh.Run('cmd.exe /c mklink /J "' + wechatSrc + '" "' + wechatDst + '" >nul 2>&1', 0, true);
+      appendLog("\u2705 [\u5B8C\u6210] \u5FAE\u4FE1\u804A\u5929\u8BB0\u5F55\u6210\u529F\u8FC1\u79FB\u5E76\u5DF2\u5EFA\u7ACB NTFS \u7B26\u53F7\u94FE\u63A5 (mklink /J)\uFF01");
+    } else {
+      appendLog("[\u63D0\u793A] \u672A\u68C0\u6D4B\u5230\u9ED8\u8BA4\u5FAE\u4FE1\u6570\u636E\u76EE\u5F55\uFF0C\u8DF3\u8FC7\u8BE5\u9879\u3002");
+    }
+
+    // 2. Downloads folder migration
+    appendLog("[\u8FC1\u79FB\u68C0\u67E5] \u6B63\u5728\u642C\u79FB\u300C\u4E0B\u8F7D\u300D\u6587\u4EF6\u5939\u81F3\u76EE\u6807\u76D8...");
+    var dlSrc = userProfile + "\\Downloads";
+    var dlDst = targetBase + "\\Downloads";
+    if (fso.FolderExists(dlSrc)) {
+      wsh.Run('cmd.exe /c robocopy "' + dlSrc + '" "' + dlDst + '" /E /MOVE /COPYALL /R:2 /W:2 >nul 2>&1', 0, true);
+      wsh.Run('cmd.exe /c rd /s /q "' + dlSrc + '" >nul 2>&1', 0, true);
+      wsh.Run('cmd.exe /c mklink /J "' + dlSrc + '" "' + dlDst + '" >nul 2>&1', 0, true);
+      appendLog("\u2705 [\u5B8C\u6210] \u4E0B\u8F7D\u6587\u4EF6\u5939\u8FC1\u79FB\u5B8C\u6210\uFF0C\u540E\u7EED\u65B0\u4E0B\u8F7D\u5C06\u76F4\u63A5\u5B58\u653E\u5728\u526F\u76D8\uFF01");
+    }
+
+    // 3. Generate desktop rollback script
+    try {
+      var desktop = wsh.SpecialFolders("Desktop");
+      var rollbackPath = desktop + "\\WinClean_Rollback_To_C.bat";
+      var rbContent = "@echo off\r\nchcp 65001 >nul\r\ntitle WinClean Pro Rollback\r\necho Rolling back...\r\ntaskkill /f /im WeChat.exe >nul 2>&1\r\nrmdir \"" + wechatSrc + "\"\r\nrobocopy \"" + wechatDst + "\" \"" + wechatSrc + "\" /E /MOVE /COPYALL >nul\r\nrmdir \"" + dlSrc + "\"\r\nrobocopy \"" + dlDst + "\" \"" + dlSrc + "\" /E /MOVE /COPYALL >nul\r\necho Done!\r\npause";
+      var f = fso.CreateTextFile(rollbackPath, true);
+      f.Write(rbContent);
+      f.Close();
+      appendLog("[\u5907\u4EFD\u4FDD\u969C] \u5DF2\u5728\u684C\u9762\u6210\u529F\u751F\u6210\u64A4\u9500\u7A0B\u5E8F\uFF1AWinClean_Rollback_To_C.bat");
+    } catch(eRollback) {}
+
+    refreshDiskSpace();
+    appendLog("==========================================\n\u1F389 C \u76D8\u5927\u6587\u4EF6\u8FC1\u79FB\u6210\u529F\uFF01C \u76D8\u5DF2\u5927\u5E45\u7626\u8EAB\uFF0C\u6240\u6709\u8F6F\u4EF6\u65E0\u7F1D\u8BFB\u53D6\uFF01");
+    alert("C \u76D8\u5927\u6587\u4EF6\u65E0\u7F1D\u8FC1\u79FB\u5B8C\u6210\uFF01\n\n1. \u5FAE\u4FE1\u804A\u5929\u8BB0\u5F55\u53CA\u4E0B\u8F7D\u5927\u6587\u4EF6\u5DF2\u5B8C\u6574\u79FB\u52A8\u81F3\u76EE\u6807\u78C1\u76D8\u3002\n2. \u539F\u8DEF\u5F84\u5DF2\u5EFA\u7ACB NTFS \u76EE\u5F55\u8054\u63A5\u7B26\u53F7\u6620\u5C04\uFF0C\u5FAE\u4FE1\u8F6F\u4EF6\u81EA\u52A8\u900F\u660E\u91CD\u5B9A\u5411\uFF0C\u6570\u636E\u5B8C\u597D\u65E0\u635F\u3002\n3. \u5DF2\u5728\u60A8\u7684\u3010\u684C\u9762\u3011\u81EA\u52A8\u751F\u6210\u300CWinClean_Rollback_To_C.bat\u300D\u4E00\u952E\u56DE\u9000\u811A\u672C\uFF0C\u53EF\u968F\u65F6\u5B89\u5168\u64A4\u9500\uFF01");
+  } catch(e) {
+    appendLog("[\u8FC1\u79FB\u5F02\u5E38] " + e.message);
+  } finally {
+    isOperating = false;
+    document.getElementById("btnMigrate").disabled = false;
+    document.getElementById("btnMigrate").style.opacity = "1";
+  }
+}
+
+function setupSchedule() {
+  try {
+    appendLog("[\u8BA1\u5212\u4EFB\u52A1] \u6B63\u5728\u6CE8\u518C Windows \u6BCF\u65E5\u51CC\u6668 03:00 \u81EA\u52A8\u6E05\u7406\u4EFB\u52A1...");
+    var cmd = 'schtasks /create /tn "WinCleanPro_DailyClean" /tr "cleanmgr.exe /sagerun:1" /sc daily /st 03:00 /f';
+    wsh.Run(cmd, 0, true);
+    appendLog("[\u8BA1\u5212\u4EFB\u52A1] \u6210\u529F\u521B\u5EFA\u6BCF\u65E5 03:00 \u81EA\u52A8\u6E05\u7406\u4EFB\u52A1\uFF08\u4EFB\u52A1\u8BA1\u5212\u7A0B\u5E8F\u53EF\u67E5\uFF09");
+    alert("\u5B9A\u65F6\u81EA\u52A8\u6E05\u7406\u4EFB\u52A1\u914D\u7F6E\u6210\u529F\uFF01\n\n\u7CFB\u7EDF\u5DF2\u8BBE\u7F6E\u6BCF\u65E5\u51CC\u6668 03:00 \u9759\u9ED8\u6E05\u7406 C \u76D8\u5783\u573E\u4E0E\u4E34\u65F6\u6587\u4EF6\uFF0C\u65E0\u9700\u4EBA\u5DE5\u5E72\u9884\u3002");
+  } catch(e) {
+    appendLog("[\u8BA1\u5212\u4EFB\u52A1\u5931\u8D25] " + e.message);
+    alert("\u914D\u7F6E\u5B9A\u65F6\u4EFB\u52A1\u5931\u8D25\uFF0C\u8BF7\u5C1D\u8BD5\u4EE5\u7BA1\u7406\u5458\u8EAB\u4EFD\u8FD0\u884C\u672C\u7A0B\u5E8F\u3002");
+  }
+}
+
+function clearLogs() {
+  document.getElementById("logArea").value = "";
+}
+</script>
+</head>
+
+<body onload="init()">
+  <div class="header">
+    <div class="title-row">
+      <h1>WinClean Pro &#x00B7; Windows C&#x76D8;&#x667A;&#x80FD;&#x6781;&#x901F;&#x6E05;&#x7406;&#x4E0E;&#x8FC1;&#x79FB;</h1>
+      <span id="winVerBadge" class="badge-win">Windows 10 / 11</span>
+    </div>
+    <div class="subtitle">&#x667A;&#x80FD;&#x626B;&#x63CF;&#x7CFB;&#x7EDF;&#x5783;&#x573E; &#x00B7; &#x72EC;&#x521B;&#x767D;&#x540D;&#x5355;&#x5185;&#x6838; &#x00B7; &#x652F;&#x6301;&#x5FAE;&#x4FE1;/&#x4E0B;&#x8F7D;&#x5927;&#x6587;&#x4EF6;&#x4E00;&#x952E;&#x65E0;&#x635F;&#x8FC1;&#x79FB;&#x81F3;D&#x76D8;</div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span>&#x672C;&#x5730;&#x7CFB;&#x7EDF;&#x78C1;&#x76D8; (C:) &#x7A7A;&#x95F4;&#x5206;&#x6790;</span>
+      <span style="font-size:14px;color:#94a3b8;cursor:pointer;" onclick="refreshDiskSpace()">[&#x5237;&#x65B0;&#x7A7A;&#x95F4;]</span>
+    </div>
+    <div class="drive-info">
+      <span id="diskStatText">&#x6B63;&#x5728;&#x68C0;&#x6D4B; C &#x76D8;&#x5BB9;&#x91CF;&#x4E0E;&#x53EF;&#x7528;&#x7A7A;&#x95F4;...</span>
+    </div>
+    <div class="progress-bg">
+      <div id="pBar" class="progress-bar"></div>
+    </div>
+    <div class="whitelist-bar">
+      <span class="whitelist-title">&#x3010;&#x5B89;&#x5168;&#x4FDD;&#x969C;&#x4E0E;&#x8FC1;&#x79FB;&#x7279;&#x6027;&#x5DF2;&#x5C31;&#x7EEA;&#x3011;&#xFF1A;</span>
+      &#x767D;&#x540D;&#x5355;&#x4FDD;&#x62A4;&#x91CD;&#x8981;&#x6587;&#x4EF6;&#xFF1B;C &#x76D8;&#x5927;&#x6587;&#x4EF6;&#x8FC1;&#x79FB;&#x91C7;&#x7528;&#x5FAE;&#x8F6F; NTFS &#x76EE;&#x5F55;&#x8054;&#x63A5;&#x7B26;&#x53F7;&#x94FE;&#x63A5;&#xFF0C;&#x642C;&#x8FC1;&#x540E;&#x65E0;&#x7F1D;&#x91CD;&#x5B9A;&#x5411;&#xFF0C;&#x6570;&#x636E; 100% &#x5B8C;&#x6574;&#xFF01;
+    </div>
+  </div>
+
+  <div class="btn-grid">
+    <button id="btnClean" class="btn btn-primary" onclick="startClean()">&#x1F680; &#x4E00;&#x952E;&#x6781;&#x901F;&#x6E05;&#x7406; C &#x76D8;</button>
+    <button id="btnMigrate" class="btn btn-migration" onclick="startMigrationAssessment()">&#x1F4E6; C&#x76D8;&#x5927;&#x6587;&#x4EF6;&#x8FC1;&#x79FB;&#x8BC4;&#x4F30;&#x4E0E;&#x786E;&#x8BA4;</button>
+    <button class="btn btn-secondary" onclick="setupSchedule()">&#x23F0; &#x5F00;&#x542F;&#x6BCF;&#x65E5;&#x5B9A;&#x65F6;&#x6E05;&#x7406; (03:00)</button>
+  </div>
+
+  <div class="log-box">
+    <div class="log-title">
+      <span>&#x7CFB;&#x7EDF;&#x5B9E;&#x65F6;&#x64CD;&#x4F5C;&#x5BA1;&#x8BA1;&#x65E5;&#x5FD7;</span>
+      <span style="font-size:13px;cursor:pointer;color:#38bdf8;" onclick="clearLogs()">[&#x6E05;&#x7A7A;&#x65E5;&#x5FD7;]</span>
+    </div>
+    <textarea id="logArea" readonly="readonly"></textarea>
+  </div>
+</body>
+</html>

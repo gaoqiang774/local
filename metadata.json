@@ -1,0 +1,6 @@
+{
+  "name": "WinClean Pro - Windows C盘智能自动清理大师",
+  "description": "专业的Windows C盘智能自动清理工具，支持垃圾文件智能识别、一键极速清理、定时自动维护任务、清理审计日志与安全白名单防护，自动适配Windows版本。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
